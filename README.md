@@ -1,9 +1,9 @@
-# DAX Lab Project – README
+# DAX Lab Project 
 
-## Dataset Overview  
+## Dataset overview  
 I am using the **Sales Data for Economic Analysis** dataset from Kaggle. It contains over 25,000 rows of sales transactions with columns like Date, Customer Age, Customer Gender, Country, State, Product Category, Sub Category, Quantity, Unit Cost, Unit Price, Cost, and Revenue. The data is real-world and perfect for practicing DAX because it includes a date column, numeric measures, and multiple categorical dimensions.
 
-## Data Model Validation  
+## Data model validation  
 I started by loading the CSV into Power BI. To build a star schema, I created a separate **Date** table using `CALENDAR` and added columns for Year, Month Number, Month Name, and Quarter. I marked it as the official Date table.  
 
 Next, I built dimension tables:  
@@ -13,8 +13,7 @@ Next, I built dimension tables:
 
 To link them to the fact table, I added foreign keys (`ProductKey`, `GeographyKey`, `CustomerKey`) using `LOOKUPVALUE`. I then hid the original categorical columns in the fact table to enforce use of the dimensions. Finally, I created one-to-many relationships from each dimension to the fact table. The model now looks clean and ready for analysis.
 
-## Core DAX Measures  
-I created four essential measures:  
+## Core DAX measures  
 - **Total Revenue** = `SUM('Sales Data'[Revenue])`  
 - **Total Cost** = `SUM('Sales Data'[Cost])`  
 - **Net Profit** = [Total Revenue] – [Total Cost]  
@@ -22,28 +21,25 @@ I created four essential measures:
 
 I also added **Avg Revenue per Transaction** = `AVERAGE('Sales Data'[Revenue])` for extra insight. All of them update instantly when I apply slicers.
 
-## Calculated Columns  
+## Calculated columns  
 To enrich the data, I added two calculated columns:  
 - **Profit Band** in the fact table: using a `VAR` for margin and `SWITCH` to classify each row as High (≥30%), Medium (≥10%), or Low margin. This helps analyze profitability.  
 - **Age Group** in the Customer dimension: grouping customers into Under 25, 25–34, 35–49, and 50+ using `SWITCH`. These thresholds are standard for marketing segmentation.  
 
 Both columns are now available for slicing and dicing in reports.
 
-## Filter Context with CALCULATE  
-I built three measures to demonstrate context manipulation:  
+## Filter context with CALCULATE  
 1. **Revenue All Products** – `CALCULATE([Total Revenue], ALL(Product))` ignores any product filter, showing the overall total even when a category is selected.  
 2. **Revenue % of Total** – `DIVIDE([Total Revenue], CALCULATE([Total Revenue], ALLSELECTED(Product)))` calculates each category’s contribution while respecting other filters like date.  
 3. **Top Category Revenue** – uses `TOPN(1, ALL(Product[Category]), [Total Revenue], DESC)` inside `CALCULATE` to return revenue for the highest‑selling category, overriding any category slicer.  
 
-These measures clearly show how `CALCULATE` changes filter behavior.
-
-## Iterator Function  
+## Iterator function  
 I created a measure using `SUMX` to perform row‑by‑row calculation:  
 - **Total Profit (SUMX)** = `SUMX('Sales Data', [Revenue] – [Cost])`  
 
-It produces the same result as `[Total Revenue] – [Total Cost]`, but it proves I understand row context. To go further, I also added **Avg Profit Margin %** = `AVERAGEX('Sales Data', DIVIDE([Revenue] – [Cost], [Revenue]))`, which would be impossible without an iterator.
+It produces the same result as `[Total Revenue] – [Total Cost]`. To go further, I also added **Avg Profit Margin %** = `AVERAGEX('Sales Data', DIVIDE([Revenue] – [Cost], [Revenue]))`, which would be impossible without an iterator.
 
-## Time Intelligence  
+## Time intelligence  
 With the Date table in place, I implemented three time‑aware measures:  
 - **Revenue YTD** = `TOTALYTD([Total Revenue], 'Date'[Date])`  
 - **Revenue PY** = `CALCULATE([Total Revenue], SAMEPERIODLASTYEAR('Date'[Date]))`  
@@ -51,17 +47,17 @@ With the Date table in place, I implemented three time‑aware measures:
 
 All of them respond correctly when I filter by date, and the YoY measure even handles empty previous periods gracefully.
 
-## Visual Validation  
+## Visual validation  
 I built four visuals to prove everything works together:  
 - A **card** showing Total Revenue.  
 - A **bar chart** with Revenue by Product Category.  
 - A **line chart** displaying Revenue, Revenue YTD, and Revenue PY over time.  
 - A **table** listing Product Category, Sub Category, Total Revenue, Net Profit, and YoY Growth %.  
 
-I added slicers for **Product Category** and **Date** (Year). When I select different values, every visual updates dynamically—just as required.
+I added slicers for **Product Category** and **Date** (Year).
 
 ## Challenge I Encountered  
-The biggest hurdle was a **circular dependency** while creating the Product dimension. Initially, I referenced the `Product` table inside `RANKX` before the table existed. I solved it by storing the base distinct combinations in a `VAR` and then ranking that variable. This broke the circular reference and gave me unique `ProductID`s. Later, I also faced an error with the `YoY Growth %` measure because `[Revenue PY]` wasn’t recognised—I had forgotten to create it first. Once I added the Previous Year measure, the YoY formula worked perfectly.
+The biggest hurdle was a **circular dependency** while creating the Product dimension. Initially, I referenced the `Product` table inside `RANKX` before the table existed. I solved it by storing the base distinct combinations in a `VAR` and then ranking that variable. This broke the circular reference and gave me unique `ProductID`s. Later, I also faced an error with the `YoY Growth %` measure because `[Revenue PY]` wasn’t recognised, I had forgotten to create it first. Once I added the Previous Year measure, the YoY formula worked perfectly.
 
 ---
 
